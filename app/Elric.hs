@@ -23,6 +23,19 @@ d8 :: StdGen -> (Integer, StdGen)
 
 d8 gen = randomR (1,8) gen 
 
+d4 :: StdGen -> (Integer, StdGen)
+
+d4 gen = randomR (1,4) gen 
+
+d4x2 :: StdGen -> (Integer, StdGen)
+
+d4x2 gen = 
+  sumDice d4 $ d4 gen
+
+invD :: (Integer, StdGen) -> (Integer, StdGen)
+
+invD (val,gen) = (-val,gen)
+
 addDiceStat :: (StdGen -> (Integer, StdGen)) -> String -> (Echaracter,StdGen) -> (Echaracter,StdGen) --add a dice to a stat
 
 addDiceStat dice name ((EC(infos,stats,secondstats,skills)),gen) =
@@ -48,24 +61,41 @@ addFlatStat flat name ((EC(infos,stats,secondstats,skills)),gen) =
   
 addNat name ec = addInfo ("Nationalite: "++name) ec 
 
+eid :: (Echaracter,StdGen) -> (Echaracter,StdGen)
+
+eid val = val
+
+-- specific function to decreace size if superior to a threshold
+subTai :: Integer -> Integer -> (Echaracter,StdGen) -> (Echaracter,StdGen)
+
+subTai cond val ((EC(infos,stats,secondstats,skills)),gen) =
+    let rep = Trie.fetch "Taille" stats in
+      case rep of
+        Nothing -> (EC(infos,stats,secondstats,skills),gen) --again this should not happen
+        Just(prevval) ->if (prevval >= cond) then
+                          (EC(infos,Trie.insert "Taille" (prevval-val) stats,secondstats,skills),gen) -- should probably make functions to change part of a character
+                        else
+                          (EC(infos,stats,secondstats,skills),gen)
+                          
 enational = [
-  RT(1,2, [ addNat "Melnibone", addDiceStat d10 "Intelligence", addDiceStat d6 "Pouvoir", addDiceStat d6 "Pouvoir", addFlatStat 3 "Taille" ]),
-  RT(3,5, [ addNat "Pan Tang" ]),
-  RT(6,8, [ addNat "Murrhyn" ]),
-  RT(9,12, [ addNat "Dharijor" ]),
-  RT(13,16, [ addNat "Jharkor" ]),
-  RT(17,24, [ addNat "Shazaar" ]),
-  RT(25,29, [ addNat "Tarkesh" ]),
+  RT(1,2, [ addNat "Melnibone", addDiceStat d10 "Intelligence", addDiceStat d6 "Pouvoir", addDiceStat d6 "Intelligence", addFlatStat 3 "Taille" ]),
+  RT(3,5, [ addNat "Pan Tang", addDiceStat d8 "Intelligence", addDiceStat d8 "Pouvoir", addFlatStat 1 "Taille" ]),
+  RT(6,8, [ addNat "Murrhyn", addDiceStat d6 "Intelligence", addDiceStat d6 "Pouvoir", addDiceStat d6 "Charisme", subTai 9 2 ]),
+  RT(9,12, [ addNat "Dharijor", addDiceStat d4 "Constitution" ]),
+  RT(13,16, [ addNat "Jharkor", addDiceStat (invD.d4) "Charisme", addDiceStat d4 "Dexterite" ]),
+  RT(17,24, [ addNat "Shazaar", addDiceStat d6 "Constitution" ]),
+  RT(25,29, [ addNat "Tarkesh" , addDiceStat d4 "Constitution" , subTai 10 1 ]),
   RT(30,37, [ addNat "Vilmir" ]),
-  RT(38,44, [ addNat "Ilmiora" ]),
-  RT(45,49, [ addNat "Nadsokor" ]),
-  RT(50,56, [ addNat "Desert des Larmes" ]),
-  RT(57,60, [ addNat "Eshmir" ]),
-  RT(61,67, [ addNat "Ile des Cites Pourpres" ]),
-  RT(68,74, [ addNat "Argimiliar" ]),
-  RT(75,81, [ addNat "Pikarayd" ]),
-  RT(82,88, [ addNat "Lormyr" ]),
-  RT(89,97, [ addNat "Oin" ]),
+  RT(38,44, [ addNat "Ilmiora" ,  addDiceStat d4 "Charisme" ]),
+  RT(45,49, [ addNat "Nadsokor" , addDiceStat (invD.d6) "Constitution" , addDiceStat (invD.d6) "Charisme" ]),
+  RT(50,56, [ addNat "Desert des Larmes" , addDiceStat d6 "Force" , addDiceStat d4 "Dexterite" , addDiceStat d6 "Constitution" , addDiceStat (invD.d4) "Charisme" , subTai 10 1  ]),
+  RT(57,60, [ addNat "Eshmir" , addDiceStat d4 "Intelligence", addDiceStat d6 "Pouvoir" , subTai 10 2 ]),
+  RT(61,67, [ addNat "Ile des Cites Pourpres" , addDiceStat d4 "Force" , addDiceStat d6 "Constitution" ]),
+  RT(68,74, [ addNat "Argimiliar"  ]),
+  RT(75,81, [ addNat "Pikarayd" , addDiceStat d4x2 "Force" , addFlatStat 1 "Taille" ]),
+  RT(82,88, [ addNat "Lormyr" , addDiceStat (invD.d4x2) "Intelligence" , addFlatStat 2 "Taille"]),
+  RT(89,95, [ addNat "Filkhar" , addDiceStat d4 "Dexterite" ]),
+  RT(96,97, [ addNat "Oin" ]), --TODO
   RT(98,99, [ addNat "Yu" ]),
   RT(100,100, [ addNat "Org" ])
   ]
